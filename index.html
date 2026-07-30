@@ -1,9 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My Website</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OffTheCouch — find something to do near you</title>
+  <meta name="description" content="Scan your area for real activities, events and places that get you up, out and socializing — matched to your age and interests." />
+  <link rel="preconnect" href="https://overpass-api.de" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Hello World</h1>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./">
+        <span class="brand-mark">◒</span>
+        <span class="brand-name">OffThe<strong>Couch</strong></span>
+      </a>
+      <p class="tagline">Real places near you that get you moving, making and meeting people.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- STEP 1: profile -->
+    <section id="setup" class="panel">
+      <h1 class="panel-title">Let's find your next thing to do</h1>
+      <p class="panel-sub">Tell us a little about you, hit scan, and we'll comb through what's actually around you — from volunteering to pickup sports to open-mic nights.</p>
+
+      <form id="profile-form" class="form">
+        <div class="field">
+          <label for="age">Your age</label>
+          <input type="number" id="age" name="age" min="10" max="110" placeholder="e.g. 27" inputmode="numeric" required />
+          <small>Used to steer recommendations toward what fits your life stage.</small>
+        </div>
+
+        <div class="field">
+          <label>What are you into? <span class="muted">(pick a few)</span></label>
+          <div id="interests" class="chips" role="group" aria-label="Interests"></div>
+        </div>
+
+        <div class="field">
+          <label for="vibe">Anything specific you're in the mood for? <span class="muted">(optional)</span></label>
+          <input type="text" id="vibe" name="vibe" placeholder="e.g. quiet and low-key, meet new people, get some exercise…" />
+        </div>
+
+        <div class="field">
+          <label for="radius">How far should the scan reach? <span id="radius-label" class="radius-badge">3 km</span></label>
+          <input type="range" id="radius" name="radius" min="500" max="15000" step="500" value="3000" />
+          <div class="range-scale"><span>Walkable</span><span>Short trip</span><span>Worth the drive</span></div>
+        </div>
+
+        <details class="ai-box">
+          <summary>Supercharge with real AI insights <span class="pill">optional</span></summary>
+          <div class="ai-body">
+            <p>By default, OffTheCouch uses a built-in matching engine to rank places and write what to expect. If you have an <strong>Anthropic API key</strong>, paste it below and your top picks get richer, hand-written-style insights from Claude. Your key stays in your browser and is never sent anywhere except Anthropic.</p>
+            <input type="password" id="apikey" name="apikey" placeholder="sk-ant-… (optional)" autocomplete="off" />
+          </div>
+        </details>
+
+        <div class="actions">
+          <button type="submit" id="scan-btn" class="btn btn-primary">
+            <span class="btn-radar">◎</span> Scan my area
+          </button>
+          <p id="geo-note" class="geo-note">We'll ask your browser for your location to scan around you.</p>
+        </div>
+      </form>
+    </section>
+
+    <!-- STEP 2: status / results -->
+    <section id="status" class="status" hidden>
+      <div class="radar-anim" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p id="status-text">Locating you…</p>
+    </section>
+
+    <section id="results" class="results" hidden>
+      <div class="results-head">
+        <div>
+          <h2 id="results-title">Here's what's around you</h2>
+          <p id="results-meta" class="muted"></p>
+        </div>
+        <button id="rescan" class="btn btn-ghost">↺ New scan</button>
+      </div>
+      <div id="cards" class="cards"></div>
+      <p class="attribution">Places from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors. Always double-check hours &amp; details before heading out.</p>
+    </section>
+
+    <section id="empty" class="empty" hidden>
+      <h2>Nothing jumped out 🫤</h2>
+      <p>We couldn't find good matches in that radius. Try widening the scan or adding more interests.</p>
+      <button id="empty-back" class="btn btn-primary">Adjust &amp; rescan</button>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>OffTheCouch — get up, get out, get amongst it.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
 </body>
 </html>
