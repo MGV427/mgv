@@ -1,61 +1,54 @@
-# Simulate any location in your Xcode project
+# Location Sim: an iPhone app that can pretend to be anywhere
 
-Drop-in files that let your iOS app (SwiftUI, iOS 17+) pretend it's anywhere on Earth,
-and move around there live.
+A ready-made Xcode project. Open it, press ▶, and you get an app that can pretend it's anywhere
+on Earth and move around there live.
 
-## 1. In-app simulator (works in the Simulator **and** on a real iPhone)
+## How to run it (Mac + Xcode)
 
-1. Drag `LocationService.swift`, `LocationPickerView.swift`, `SimulationControls.swift`
-   and `ContentView.swift` into your Xcode project (tick **Copy items if needed** and
-   your app target). `ContentView.swift` replaces the template one, so delete the old
-   one first, or keep yours and add `SimulationControls()` and a button that opens
-   `LocationPickerView()`.
-2. Add the location permission text: select the target → **Info** tab → **+** →
-   `Privacy - Location When In Use Usage Description` → e.g. *"Shows where you are."*
-3. Run it:
-   - **Tap the map** to teleport there.
-   - **Drag the joystick** to move around. Pick a speed: walk, run, cycle, drive or fly.
-     An arrow shows which way you're heading.
-   - **🔍 button** → search for any place, type `lat, lon`, or pick a preset city.
-   - **Route mode** (in the 🔍 screen): tap to drop numbered stops, choose a speed and
-     *Loop back to start*, then **Follow Route**. The location travels along it live.
-   - **Use Real** switches back to your actual GPS.
+1. Install **Xcode** from the Mac App Store (free).
+2. Download this folder: on GitHub click **Code → Download ZIP**, then double-click the ZIP.
+3. Open the `xcode-location-simulator` folder and double-click **`LocationSimulator.xcodeproj`**.
+4. At the top of Xcode, pick an iPhone Simulator (for example "iPhone 16") and press **▶**.
 
-Everywhere in your app, read the location from:
+That's it. The app opens in the Simulator.
 
-```swift
-LocationService.shared.currentLocation   // CLLocation?, including course and speed while moving
-```
+**On your own iPhone:** plug it in and choose it at the top instead of a Simulator.
+Then click **LocationSimulator** in the left list → **Signing & Capabilities** → choose your
+Apple ID under **Team**. The first time, your iPhone may ask you to trust the developer in
+**Settings → General → VPN & Device Management**.
 
-instead of using `CLLocationManager` directly, so the simulated spot is used everywhere.
-You can also drive it from code:
+## What you can do in the app
 
-```swift
-let location = LocationService.shared
-location.simulate(latitude: 41.8902, longitude: 12.4922, name: "Colosseum")
-location.speed = .cycle
-location.setJoystick(east: 0, north: 1)        // head north; (0, 0) stops
-location.followRoute([a, b, c], loop: true)    // travel along waypoints
-location.stopSimulating()
-```
+- **Tap the map** to teleport there.
+- **Drag the purple joystick** to walk around. Pick a speed: walk, run, cycle, drive or fly.
+- **🔍 button**: search any place, type coordinates like `41.8902, 12.4922`, or pick a city.
+- **Route** (inside 🔍): tap to drop stops, then **Follow Route** and watch it travel.
+- **Use Real** goes back to your actual GPS.
 
-The chosen spot is saved and survives relaunches.
+The simulated location is inside this app only. It doesn't change your iPhone's GPS for other apps.
 
-## 2. Simulator-wide (any app, no code)
+## Extra: change the Simulator's location for *every* app
+
+With the Simulator open, run this in Terminal from this folder:
 
 ```bash
 ./simulate-location.sh                     # interactive: walk with WASD / arrow keys
-./simulate-location.sh 40.7580 -73.9855
-./simulate-location.sh "Colosseum, Rome"
+./simulate-location.sh "Colosseum, Rome"   # jump to a place
+./simulate-location.sh 40.7580 -73.9855    # jump to coordinates
 ./simulate-location.sh clear
 ```
 
-In interactive mode: **W A S D** or arrow keys move you, **+ / −** change the step size,
-**g** goes to a place, **c** clears and **q** quits.
-This uses `xcrun simctl location` (Xcode 14+). Place names are looked up with OpenStreetMap.
+Or use `CustomLocation.gpx` with Xcode's **Debug → Simulate Location** menu. Drag it into
+the project first and edit the coordinates inside.
 
-## 3. Xcode GPX file (Simulator or a device connected to Xcode)
+## What's inside
 
-Add `CustomLocation.gpx` to the project, edit its `lat`/`lon`, then while running use
-**Debug → Simulate Location → CustomLocation**, or make it the default in
-**Product → Scheme → Edit Scheme → Run → Options → Default Location**.
+| File | What it does |
+|------|--------------|
+| `LocationSimulator.xcodeproj` | The Xcode project; double-click to open |
+| `LocationSimulator/LocationSimulatorApp.swift` | App start |
+| `LocationSimulator/ContentView.swift` | Main map screen |
+| `LocationSimulator/SimulationControls.swift` | Joystick and speed picker |
+| `LocationSimulator/LocationPickerView.swift` | Search, coordinates, presets, route builder |
+| `LocationSimulator/LocationService.swift` | Real vs. simulated location, movement and routes |
+| `LocationSimulator/Assets.xcassets` | App icon and colours |
