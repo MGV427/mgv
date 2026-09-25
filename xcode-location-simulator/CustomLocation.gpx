@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!--
+  Xcode location file. Change lat/lon to any place, then in Xcode:
+  Debug > Simulate Location > CustomLocation (while the app is running),
+  or set it as the default in Product > Scheme > Edit Scheme > Run > Options.
+  Add more <wpt> entries (with <time>) to simulate moving between points.
+-->
+<gpx version="1.1" creator="Xcode">
+    <wpt lat="48.8584" lon="2.2945">
+        <name>Eiffel Tower</name>
+    </wpt>
+</gpx>
