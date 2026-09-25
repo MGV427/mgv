@@ -1,0 +1,27 @@
+name: iOS app build
+
+on:
+  push:
+    paths:
+      - "xcode-location-simulator/**"
+      - ".github/workflows/ios-build.yml"
+  pull_request:
+    paths:
+      - "xcode-location-simulator/**"
+      - ".github/workflows/ios-build.yml"
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show Xcode version
+        run: xcodebuild -version
+      - name: Build LocationSimulator for the iOS Simulator
+        run: |
+          xcodebuild build \
+            -project xcode-location-simulator/LocationSimulator.xcodeproj \
+            -target LocationSimulator \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
