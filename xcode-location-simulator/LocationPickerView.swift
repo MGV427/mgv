@@ -6,7 +6,13 @@ import MapKit
 /// - type coordinates like `48.8584, 2.2945`
 /// - tap anywhere on the map
 /// - choose a preset city
+/// ...or switch to Route mode, drop waypoints and have the location travel along them.
 struct LocationPickerView: View {
+    enum Mode: String, CaseIterable {
+        case point = "Point"
+        case route = "Route"
+    }
+
     @Environment(\.dismiss) private var dismiss
 
     private let service = LocationService.shared
@@ -17,11 +23,19 @@ struct LocationPickerView: View {
     @State private var selectedName: String?
     @State private var latitudeText = ""
     @State private var longitudeText = ""
+    @State private var mode: Mode = .point
+    @State private var waypoints: [CLLocationCoordinate2D] = []
+    @State private var loopRoute = false
     @FocusState private var searchFocused: Bool
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                Picker("Mode", selection: $mode) {
+                    ForEach(Mode.allCases, id: \.self) { Text($0.rawValue) }
+                }
+                .pickerStyle(.segmented)
+                .padding([.horizontal, .top])
                 searchField
                 if searchFocused && !search.query.isEmpty {
                     searchResults
@@ -30,7 +44,7 @@ struct LocationPickerView: View {
                     controls
                 }
             }
-            .navigationTitle("Simulate Location")
+            .navigationTitle(mode == .point ? "Simulate Location" : "Build a Route")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -46,6 +60,12 @@ struct LocationPickerView: View {
                 }
             }
             .onAppear(perform: loadInitialSelection)
+            .onChange(of: mode) {
+                // Start new routes from wherever we are now.
+                if mode == .route, waypoints.isEmpty, let here = service.currentLocation?.coordinate {
+                    waypoints = [here]
+                }
+            }
         }
     }
 
@@ -104,7 +124,22 @@ struct LocationPickerView: View {
     private var map: some View {
         MapReader { proxy in
             Map(position: $position) {
-                if let selected {
+                if mode == .route {
+                    if waypoints.count > 1 {
+                        MapPolyline(coordinates: loopRoute ? waypoints + [waypoints[0]] : waypoints)
+                            .stroke(.purple, lineWidth: 4)
+                    }
+                    ForEach(Array(waypoints.enumerated()), id: \.offset) { index, point in
+                        Annotation("", coordinate: point) {
+                            Text("\(index + 1)")
+                                .font(.caption.bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 24, height: 24)
+                                .background(index == 0 ? Color.green : Color.purple, in: Circle())
+                                .overlay(Circle().stroke(.white, lineWidth: 2))
+                        }
+                    }
+                } else if let selected {
                     Marker(selectedName ?? "Simulated", systemImage: "location.fill", coordinate: selected)
                         .tint(.purple)
                 }
@@ -124,17 +159,83 @@ struct LocationPickerView: View {
 
     private var controls: some View {
         VStack(spacing: 12) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
-                    ForEach(Self.presets, id: \.name) { preset in
-                        Button(preset.name) {
-                            select(preset.coordinate, name: preset.name)
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                }
-                .padding(.horizontal)
+            if mode == .route {
+                routeControls
+            } else {
+                pointControls
             }
+        }
+        .padding(.vertical)
+        .background(.bar)
+    }
+
+    private var presetButtons: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack {
+                ForEach(Self.presets, id: \.name) { preset in
+                    Button(preset.name) {
+                        select(preset.coordinate, name: preset.name)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+
+    private var routeControls: some View {
+        VStack(spacing: 12) {
+            presetButtons
+
+            HStack {
+                Text(waypoints.isEmpty ? "Tap the map to add stops" : "\(waypoints.count) stops · \(routeLengthText)")
+                    .font(.subheadline)
+                Spacer()
+                Button("Undo", systemImage: "arrow.uturn.backward") {
+                    _ = waypoints.popLast()
+                }
+                .labelStyle(.iconOnly)
+                .disabled(waypoints.isEmpty)
+                Button("Clear", systemImage: "trash") {
+                    waypoints.removeAll()
+                }
+                .labelStyle(.iconOnly)
+                .disabled(waypoints.isEmpty)
+            }
+            .padding(.horizontal)
+
+            SpeedPicker()
+                .padding(.horizontal)
+
+            Toggle("Loop back to start", isOn: $loopRoute)
+                .padding(.horizontal)
+
+            Button {
+                service.followRoute(waypoints, loop: loopRoute)
+                dismiss()
+            } label: {
+                Label("Follow Route", systemImage: "play.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.purple)
+            .disabled(waypoints.count < 2)
+            .padding(.horizontal)
+        }
+    }
+
+    private var routeLengthText: String {
+        var meters = zip(waypoints, waypoints.dropFirst()).reduce(0) { $0 + LocationService.distance($1.0, $1.1) }
+        if loopRoute, let first = waypoints.first, let last = waypoints.last {
+            meters += LocationService.distance(last, first)
+        }
+        return Measurement(value: meters, unit: UnitLength.meters)
+            .formatted(.measurement(width: .abbreviated, usage: .road))
+    }
+
+    private var pointControls: some View {
+        VStack(spacing: 12) {
+            presetButtons
 
             HStack {
                 TextField("Latitude", text: $latitudeText)
@@ -169,8 +270,6 @@ struct LocationPickerView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.vertical)
-        .background(.bar)
     }
 
     // MARK: - Actions
@@ -184,6 +283,9 @@ struct LocationPickerView: View {
     }
 
     private func select(_ coordinate: CLLocationCoordinate2D, name: String?, moveCamera: Bool = true) {
+        if mode == .route {
+            waypoints.append(coordinate)
+        }
         selected = coordinate
         selectedName = name
         latitudeText = String(format: "%.6f", coordinate.latitude)
